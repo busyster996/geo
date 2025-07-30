@@ -5,16 +5,16 @@ import (
 	"math"
 )
 
-// Convex 凸多边形
+// Convex represents a convex polygon
 type Convex struct {
-	Index          int32       // convex序号，唯一标示
-	Vertices       []Vertice   // 三角形包含三个顶点
-	MergeTriangles []*Triangle // 合成的三角形
-	EdgeIDs        []int32
-	WtCoord        Coord
+	Index          int32       // Unique identifier for the convex polygon
+	Vertices       []Vertice   // Vertices of the polygon (triangles contain three vertices)
+	MergeTriangles []*Triangle // Triangles that compose this convex polygon
+	EdgeIDs        []int32     // Edge identifiers
+	WtCoord        Coord       // Weight coordinate (center of mass)
 }
 
-// NewConvex 转化三角形为凸多边形
+// NewConvex converts a triangle to a convex polygon
 func NewConvex(t *Triangle, id int32) *Convex {
 	return &Convex{
 		Index: id,
@@ -28,7 +28,8 @@ func NewConvex(t *Triangle, id int32) *Convex {
 	}
 }
 
-// ToRect 获取四边形矩形边界
+// ToRect returns the bounding rectangle of the convex polygon
+// Returns minimum and maximum X,Z coordinates
 func (c *Convex) ToRect() (minX, minZ, maxX, maxZ int32) {
 	minX = int32(math.MaxInt32)
 	minZ = int32(math.MaxInt32)
@@ -41,15 +42,18 @@ func (c *Convex) ToRect() (minX, minZ, maxX, maxZ int32) {
 	return minX, minZ, maxX, maxZ
 }
 
-// MergeTriangle 合成新的凸多边形
+// MergeTriangle merges new triangle to form a new convex polygon
+// p1, p2: shared vertices between triangles
+// p3: additional vertices from the new triangle
+// Returns true if merge is successful and results in a valid convex polygon
 func (c *Convex) MergeTriangle(p1, p2 Vertice, p3 []Vertice) bool {
 	for index, v := range c.Vertices {
 		if v.Index == p1.Index || v.Index == p2.Index {
 			newVertices := make([]Vertice, len(c.Vertices))
 			copy(newVertices, c.Vertices)
-			// 将新的点插入到正确的位置
+			// Insert new points at correct position
 			if index != 0 || c.Vertices[index+1].Index == p2.Index || c.Vertices[index+1].Index == p1.Index {
-				// 尝试插入两次,因为不能确定点的排列方式
+				// Try inserting twice since we can't determine the point arrangement
 				for i := 0; i < 2; i++ {
 					newVertices = make([]Vertice, len(c.Vertices)+len(p3))
 					insertIndex := 0
@@ -69,7 +73,7 @@ func (c *Convex) MergeTriangle(p1, p2 Vertice, p3 []Vertice) bool {
 						c.Vertices = newVertices
 						return true
 					}
-					// 反序排列
+					// Reverse order
 					for i, j := 0, len(p3)-1; i < j; i, j = i+1, j-1 {
 						p3[i], p3[j] = p3[j], p3[i]
 					}
@@ -83,7 +87,7 @@ func (c *Convex) MergeTriangle(p1, p2 Vertice, p3 []Vertice) bool {
 						c.Vertices = newVertices
 						return true
 					}
-					// 反序排列
+					// Reverse order
 					for i, j := 0, len(p3)-1; i < j; i, j = i+1, j-1 {
 						p3[i], p3[j] = p3[j], p3[i]
 					}
@@ -95,8 +99,8 @@ func (c *Convex) MergeTriangle(p1, p2 Vertice, p3 []Vertice) bool {
 	return false
 }
 
-// GetVectors 获取凸多边形向量组，逆时针排列,
-// 凸多边形相邻边的差积大于0则是逆时针排序
+// GetVectors returns vector array of convex polygon in counter-clockwise order
+// Adjacent edges of convex polygon have positive cross product in counter-clockwise order
 func (c *Convex) GetVectors() []Vector {
 	c.CounterClockWiseSort()
 	vecs := make([]Vector, 0, len(c.Vertices))
@@ -106,7 +110,7 @@ func (c *Convex) GetVectors() []Vector {
 	return vecs
 }
 
-// TriangleHasCoord 返回点所在的三角形
+// TriangleHasCoord returns the triangle index that contains the given point
 func (c *Convex) TriangleHasCoord(p Coord) int32 {
 	for _, t := range c.MergeTriangles {
 		if t.IsCoordInside(p) {
@@ -116,7 +120,7 @@ func (c *Convex) TriangleHasCoord(p Coord) int32 {
 	return -1
 }
 
-// IsCoordInside1 判断点在不在凸多边形内,射线法
+// IsCoordInside1 checks if point is inside convex polygon using ray casting algorithm
 func (c *Convex) IsCoordInside1(p Coord) bool {
 	if len(c.MergeTriangles) == 1 {
 		return c.MergeTriangles[0].IsCoordInside(p)
@@ -149,7 +153,7 @@ func (c *Convex) IsCoordInside1(p Coord) bool {
 			ymin = ymax
 			ymax = t
 		}
-		// i//j//aixs_x
+		// Check if point is on horizontal edge
 		if vj.Coord.Z == vi.Coord.Z {
 			if y == vi.Coord.Z && xmin <= x && x <= xmax {
 				return true
@@ -159,7 +163,7 @@ func (c *Convex) IsCoordInside1(p Coord) bool {
 
 		xt := (vj.Coord.X-vi.Coord.X)*(y-vi.Coord.Z)/(vj.Coord.Z-vi.Coord.Z) + vi.Coord.X
 		if xt == x && ymin <= y && y <= ymax {
-			// on edge [vj,vi]
+			// Point is on edge [vj,vi]
 			return true
 		}
 		if x < xt && ymin <= y && y < ymax {
@@ -170,7 +174,7 @@ func (c *Convex) IsCoordInside1(p Coord) bool {
 	return isIn
 }
 
-// IsCoordInside2 Check if point is inside a convex
+// IsCoordInside2 checks if point is inside convex polygon using binary search
 func (c *Convex) IsCoordInside2(p Coord) bool {
 	numOfVertice := len(c.Vertices)
 	target := Vertice{Coord: p}
@@ -184,31 +188,31 @@ func (c *Convex) IsCoordInside2(p Coord) bool {
 	if cp1 == 0 && vec2CoordLen <= vec1.Length() || cp2 == 0 && vec2CoordLen <= vec2.Length() {
 		return true
 	}
-	// step 1: the point should between two vector point 0 to point 1 and point 0 to point n-1
+	// Step 1: the point should be between two vectors from point 0 to point 1 and point 0 to point n-1
 	if (cp1 > 0) == (cp2 > 0) {
 		return false
 	}
 
 	s := 1
 	e := numOfVertice - 1
-	// step 2: using binary search to determin point is between which two point
+	// Step 2: use binary search to determine which two points the target point is between
 	for e != s+1 {
 		m := (s + e) / 2
-		if (CrossProduct(target, c.Vertices[m], c.Vertices[0]) > 0) == isCounterClockwise { // target在m顺时针方向
+		if (CrossProduct(target, c.Vertices[m], c.Vertices[0]) > 0) == isCounterClockwise { // target is clockwise to m
 			e = m
-		} else { // target在m逆时针方向
+		} else { // target is counter-clockwise to m
 			s = m
 		}
 	}
-	// step 3: the polygon will divided to a triangle finally,
-	// check the point position of the finally vector,
-	// the direction should be the same as the point position of point 0 to point 1
+	// Step 3: the polygon is divided into a triangle finally,
+	// check the point position of the final vector,
+	// the direction should be the same as the point position from point 0 to point 1
 	vec3 := NewVector(c.Vertices[s].Coord, c.Vertices[e].Coord)
 	vecS2Coord := NewVector(c.Vertices[s].Coord, p)
 	return vec3.Cross(&vecS2Coord) > 0 == isCounterClockwise
 }
 
-// IsCoordInside Check if point is inside a convex
+// IsCoordInside checks if point is inside convex polygon
 func (c *Convex) IsCoordInside(p Coord) bool {
 	numOfVertice := len(c.Vertices)
 	vec1 := NewVector(c.Vertices[0].Coord, c.Vertices[1].Coord)
@@ -224,14 +228,14 @@ func (c *Convex) IsCoordInside(p Coord) bool {
 	return true
 }
 
-// CheckConvex 测试用查看这个凸多边形的合成正不正确
+// CheckConvex validates if this convex polygon is correctly formed (for testing)
 func (c *Convex) CheckConvex() bool {
 	vers := make(map[int32]bool)
 	for _, ver := range c.Vertices {
 		vers[ver.Index] = false
 	}
 	if !IsConvex(c.Vertices) {
-		log.Printf("[ERROR] convex error not a convex d\n")
+		log.Printf("[ERROR] convex error not a convex polygon\n")
 		return false
 	}
 	count1 := len(vers)
@@ -255,22 +259,22 @@ func (c *Convex) CheckConvex() bool {
 	return true
 }
 
-// CounterClockWiseSort 逆时针排列点
+// CounterClockWiseSort sorts vertices in counter-clockwise order
 func (c *Convex) CounterClockWiseSort() {
 	if CrossProduct(c.Vertices[0], c.Vertices[1], c.Vertices[2]) < 0 {
-		// 顺时针排序,反序排列
+		// Clockwise order, reverse the array
 		for i, j := 0, len(c.Vertices)-1; i < j; i, j = i+1, j-1 {
 			c.Vertices[i], c.Vertices[j] = c.Vertices[j], c.Vertices[i]
 		}
 	}
 }
 
-// GetIndex 获取序号
+// GetIndex returns the polygon index
 func (c *Convex) GetIndex() int32 {
 	return c.Index
 }
 
-// GetNeighborPoints 获取两个凸多边形的邻接点
+// GetNeighborPoints returns neighboring points between two convex polygons
 func (c *Convex) GetNeighborPoints(t2 Polygon) []Vertice {
 	vertices := t2.GetVertices()
 	numOfVecs := len(vertices)
@@ -283,12 +287,13 @@ func (c *Convex) GetNeighborPoints(t2 Polygon) []Vertice {
 			}
 		}
 	}
-	// 返回多边形的点,前两个为临接边上的两点, 只有相邻点为2时是相邻凸多边形
+	// Return polygon points, first two are points on adjacent edge
+	// Only when adjacent points equal 2, they are neighboring convex polygons
 	if len(pointsIndexs) == 2 {
 		points := make([]Vertice, numOfVecs)
 		first := pointsIndexs[0]
 		second := pointsIndexs[1]
-		if (first+1)%numOfVecs != second { // 如果first的下一个点不是second则交换, second的值不需要了直接给first赋值即可
+		if (first+1)%numOfVecs != second { // If next point of first is not second, swap them
 			first = second
 		}
 		for i := 0; i < numOfVecs; i++ {
@@ -299,12 +304,12 @@ func (c *Convex) GetNeighborPoints(t2 Polygon) []Vertice {
 	return nil
 }
 
-// GetVertices 获取点列表
+// GetVertices returns the list of vertices
 func (c *Convex) GetVertices() []Vertice {
 	return c.Vertices
 }
 
-// GetCenterCoord 获取中心点
+// GetCenterCoord returns the center point (arithmetic mean of vertices)
 func (c *Convex) GetCenterCoord() Coord {
 	coordx := int32(0)
 	coordz := int32(0)
@@ -316,7 +321,7 @@ func (c *Convex) GetCenterCoord() Coord {
 	return Coord{coordx / length, coordz / length}
 }
 
-// GetCenterCoord1 获取重心
+// GetCenterCoord1 returns the centroid (center of mass) of the polygon
 func (c *Convex) GetCenterCoord1() Coord {
 	S := int32(0)
 	for i := 0; i < len(c.Vertices)-1; i++ {
@@ -342,12 +347,12 @@ func (c *Convex) GetCenterCoord1() Coord {
 
 }
 
-// GetEdgeIDs 返回多边形边的序号列表
+// GetEdgeIDs returns the list of edge indices
 func (c *Convex) GetEdgeIDs() []int32 {
 	return c.EdgeIDs
 }
 
-// GetEdgeMidCoords 获取边中点
+// GetEdgeMidCoords returns the midpoints of all edges
 func (c *Convex) GetEdgeMidCoords() []Coord {
 	nums := len(c.Vertices)
 	coords := make([]Coord, 0, nums)

@@ -3,39 +3,39 @@ package util
 import "math"
 
 const (
-	// Epsilon 正常精度浮点
+	// Epsilon normal precision floating point
 	Epsilon = 0.00000001
-	// LowEpsilon 低精度浮点
+	// LowEpsilon low precision floating point
 	LowEpsilon = 0.01
 )
 
-// AC 浮点精度函数
+// AC floating point precision function
 var AC Accuracy = func() float64 { return LowEpsilon }
 
-// Accuracy 精度
+// Accuracy precision type
 type Accuracy func() float64
 
-// Equal 相等比较
+// Equal checks if two floating point numbers are equal
 func (ac Accuracy) Equal(a, b float64) bool {
 	return math.Abs(a-b) < LowEpsilon
 }
 
-// Greater 大于
+// Greater checks if a is greater than b
 func (ac Accuracy) Greater(a, b float64) bool {
 	return math.Max(a, b) == a && math.Abs(a-b) > ac()
 }
 
-// Smaller 小于
+// Smaller checks if a is smaller than b
 func (ac Accuracy) Smaller(a, b float64) bool {
 	return math.Max(a, b) == b && math.Abs(a-b) > ac()
 }
 
-// GreaterOrEqual 大于等于
+// GreaterOrEqual checks if a is greater than or equal to b
 func (ac Accuracy) GreaterOrEqual(a, b float64) bool {
 	return math.Max(a, b) == a || math.Abs(a-b) < ac()
 }
 
-// SmallerOrEqual 小于等于
+// SmallerOrEqual checks if a is smaller than or equal to b
 func (ac Accuracy) SmallerOrEqual(a, b float64) bool {
 	return math.Max(a, b) == b || math.Abs(a-b) < ac()
 }

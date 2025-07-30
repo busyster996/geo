@@ -6,21 +6,21 @@ import (
 	"github.com/busyster996/geo/util"
 )
 
-// GetCoordsAround 获得圆圈周围的点
-// startCoord: 圆上一点
-// centerCoord: 圆心
-// endCoord: 圆外点
+// GetCoordsAround gets points around a circle
+// startCoord: a point on the circle
+// centerCoord: center of the circle
+// endCoord: external point outside the circle
 func GetCoordsAround(startCoord, endCoord, centerCoord Coord) []Coord {
 	centerVector := NewVector(centerCoord, startCoord)
 	endVector := NewVector(centerCoord, endCoord)
 
-	// 向量夹角
+	// Vector angle
 	angle := centerVector.GetAngle(&endVector)
 	radius := CalDstCoordToCoord(startCoord, centerCoord)
-	// 切线角度
+	// Tangent angle
 	cutAngle := GetCutOffCoordAngle(endCoord, centerCoord, radius)
 	angle -= cutAngle
-	// 叉积确定方向
+	// Use cross product to determine direction
 	if centerVector.Cross(&endVector) > 0 {
 		angle = -angle
 	}
@@ -29,16 +29,16 @@ func GetCoordsAround(startCoord, endCoord, centerCoord Coord) []Coord {
 	return coords
 }
 
-// GetCoordsAround2 获取圆周围均匀分布的点
-// circleCoord: 圆周上的点
-// centerCoord: 圆心
-// n: 均匀分配点的个数
+// GetCoordsAround2 gets evenly distributed points around a circle
+// circleCoord: a point on the circle
+// centerCoord: center of the circle
+// n: number of evenly distributed points
 func GetCoordsAround2(circleCoord, centerCoord Coord, n int) []Coord {
 	return getCoordsAround(circleCoord, centerCoord, n, 2*math.Pi)
 }
 
-// getCoordsAround 获取圆上的startCoord出发, angle角度内的点, 包括startCoord
-// n: 采样数
+// getCoordsAround gets points on circle starting from startCoord within angle range, including startCoord
+// n: number of sample points
 func getCoordsAround(startCoord, centerCoord Coord, n int, angle float64) []Coord {
 	if n < 2 {
 		return nil
@@ -59,19 +59,19 @@ func getCoordsAround(startCoord, centerCoord Coord, n int, angle float64) []Coor
 	return ret
 }
 
-// GetArcCoords 获取圆弧上的点, 圆弧从startCoord点出发, angle弧度
-// angle: 角度, >0 为顺时针方向, <0 为逆时针方向
+// GetArcCoords gets points on arc starting from startCoord with given angle in radians
+// angle: angle in radians, >0 for clockwise, <0 for counter-clockwise
 func GetArcCoords(startCoord, centerCoord Coord, angle float64) []Coord {
-	// pi 34个点
+	// pi radians with 34 points
 	n := max(int32(util.Abs(angle)*10), 2)
 	return getCoordsAround(startCoord, centerCoord, int(n), -angle)
 }
 
-// GetSpiralCoords 按照螺线获取路径点
-// startCoord: 起始坐标
-// centerCoord: 中心点
-// angle: 角度, >0 为顺时针方向, <0 为逆时针方向
-// delta: 最后一个点与起点 相对于中心的距离偏差
+// GetSpiralCoords generates spiral path points
+// startCoord: starting coordinate
+// centerCoord: center point
+// angle: angle in radians, >0 for clockwise, <0 for counter-clockwise
+// delta: distance difference between last point and start point relative to center
 func GetSpiralCoords(startCoord, centerCoord Coord, angle, delta float64) []Coord {
 	n := int32(util.Abs(angle) * 10)
 	if n < 2 {
@@ -92,10 +92,10 @@ func GetSpiralCoords(startCoord, centerCoord Coord, angle, delta float64) []Coor
 	vec := NewVector(centerCoord, startCoord)
 	radius := vec.Length()
 	for i := int32(1); i < n; i++ {
-		// 将原始向量旋转
+		// Rotate the original vector
 		angle += aveAngle
 		v := vec.Rotate(angle)
-		// 增加将向量长度
+		// Increase vector length
 		delta += aveDelta
 		v = v.Trunc((radius + delta) / radius)
 
@@ -105,29 +105,29 @@ func GetSpiralCoords(startCoord, centerCoord Coord, angle, delta float64) []Coor
 	return ret
 }
 
-// GetIntersectCoord 求圆外一点到中心的线段和圆的交点
+// GetIntersectCoord calculates intersection point between line from external point to center and circle
 func GetIntersectCoord(centerP, endP Coord, radius int32) Coord {
 	c := NewCirCle(centerP, radius)
 	return c.GetIntersectCoord(endP)
 }
 
-// GetLineCrossCircle 线段与圆的交点
-// startP: 起点坐标
-// endP: 终点坐标
-// centerP: 终点坐标
-// radius: 圆半径
-// 如果有交点，返回第一个交点，如果没有，返回nil
+// GetLineCrossCircle calculates intersection point between line segment and circle
+// startP: start point coordinate
+// endP: end point coordinate
+// centerP: circle center coordinate
+// radius: circle radius
+// Returns first intersection point if exists, otherwise returns false
 func GetLineCrossCircle(startP, endP, centerP Coord, radius int32) (Coord, bool) {
 	c := NewCirCle(centerP, radius)
 	seg := NewSegment(startP, endP)
 	return c.GetLineCross(&seg)
 }
 
-// GetCutOffCoordAngle 求圆外一点（endCoord）的到圆(center)的切点的角度
+// GetCutOffCoordAngle calculates the angle from external point (endCoord) to tangent point of circle (center)
 func GetCutOffCoordAngle(endCoord, centerCoord Coord, radius float64) float64 {
-	// 令终点为e, 圆心为c, 切点为 p
+	// Let endpoint be e, center be c, tangent point be p
 	// ep ⊥ cp
-	// cos∠ecp = ep / cp
+	// cos∠ecp = radius / distance_ec
 	dst := CalDstCoordToCoord(endCoord, centerCoord)
 	a := math.Acos(radius / dst)
 
@@ -138,7 +138,8 @@ func GetCutOffCoordAngle(endCoord, centerCoord Coord, radius float64) float64 {
 	return a
 }
 
-// GetBresenhamCoord https://zh.wikipedia.org/wiki/布雷森漢姆直線演算法
+// GetBresenhamCoord implements Bresenham's line algorithm
+// Reference: https://zh.wikipedia.org/wiki/布雷森漢姆直線演算法
 func GetBresenhamCoord(p1, p2 Coord) []Coord {
 	xstart := p1.X
 	zstart := p1.Z
@@ -197,14 +198,14 @@ func GetBresenhamCoord(p1, p2 Coord) []Coord {
 	return tmpCoordList
 }
 
-// reverse 将slice反转
+// reverse reverses a slice of coordinates
 func reverse(slice []Coord) {
 	for i, j := 0, len(slice)-1; j > i; i, j = i+1, j-1 {
 		slice[i], slice[j] = slice[j], slice[i]
 	}
 }
 
-// CalMidCoord 计算中心点
+// CalMidCoord calculates the midpoint between two coordinates
 func CalMidCoord(p1, p2 Coord) Coord {
 	return Coord{
 		X: (p1.X + p2.X) / 2,
@@ -212,13 +213,14 @@ func CalMidCoord(p1, p2 Coord) Coord {
 	}
 }
 
-// GetCrossRect 计算线段经过的范围的矩形坐标算法，范围被划分为n个小矩形
-// p0, p1: 线段的起始点坐标
-// rWidth, rHeight: 小矩形的宽
-// width, height: 范围的宽和高
+// GetCrossRect calculates rectangles that a line segment passes through
+// The area is divided into n small rectangles
+// p0, p1: line segment start and end points
+// rWidth, rHeight: small rectangle dimensions
+// width, height: total area dimensions
 func GetCrossRect(p0, p1 Coord, rWidth, rHeight, width, height int32) map[Coord]bool {
 	coordSet := map[Coord]bool{}
-	// 将起点和终点所在的矩形加入
+	// Add rectangles containing start and end points
 	startCoords := []Coord{p0, p1}
 	for i := 0; i < len(startCoords); i++ {
 		c := Coord{X: (startCoords[i].X / rHeight) * rHeight, Z: (startCoords[i].Z / rHeight) * rHeight}
@@ -227,7 +229,7 @@ func GetCrossRect(p0, p1 Coord, rWidth, rHeight, width, height int32) map[Coord]
 			coordSet[c] = true
 		}
 	}
-	// 由小到大
+	// Sort from small to large
 	zStart := p0
 	zEnd := p1
 	if p1.Z < p0.Z {
@@ -236,18 +238,18 @@ func GetCrossRect(p0, p1 Coord, rWidth, rHeight, width, height int32) map[Coord]
 	}
 	startZ := zStart.Z / rHeight
 	endZ := zEnd.Z / rHeight
-	// 遍历横轴
+	// Traverse horizontal axis
 	for i := startZ; i <= endZ; i++ {
 		q0 := &Coord{X: 0, Z: i * rHeight}
 		q1 := &Coord{X: width, Z: i * rHeight}
-		// 计算交点
+		// Calculate intersection point
 		coord, ok := GetCrossCoord(p0, p1, *q0, *q1)
 		if ok {
-			// 校正误差
+			// Correct for errors
 			coord.Z = i * rHeight
 			upCoord := Coord{X: (coord.X / rHeight) * rHeight, Z: (coord.Z / rHeight) * rHeight}
 			downCoord := Coord{X: upCoord.X, Z: (coord.Z/rHeight - 1) * rHeight}
-			// 上下矩形必然为经过的矩形，如果交点恰好在矩形十字交点上，那么会多算一些矩形
+			// Upper and lower rectangles are definitely crossed by the line
 			_, exist := coordSet[upCoord]
 			if !exist {
 				coordSet[upCoord] = true
@@ -265,19 +267,19 @@ func GetCrossRect(p0, p1 Coord, rWidth, rHeight, width, height int32) map[Coord]
 		xStart = p1
 		xEnd = p0
 	}
-	// 遍历纵轴
+	// Traverse vertical axis
 	startX := xStart.X / rWidth
 	endX := xEnd.X / rWidth
 	for i := startX; i <= endX; i++ {
 		q0 := &Coord{X: i * rWidth, Z: 0}
 		q1 := &Coord{X: i * rWidth, Z: height}
-		// 求交点
+		// Calculate intersection point
 		coord, ok := GetCrossCoord(p0, p1, *q0, *q1)
 		if ok {
 			coord.X = i * rWidth
 			rightCoord := Coord{X: (coord.X / rWidth) * rWidth, Z: (coord.Z / rWidth) * rWidth}
 			leftCoord := Coord{X: (coord.X/rWidth - 1) * rWidth, Z: rightCoord.Z}
-			// 左右矩形必然为经过的矩形
+			// Left and right rectangles are definitely crossed by the line
 			_, exist := coordSet[rightCoord]
 			if !exist {
 				coordSet[rightCoord] = true
@@ -292,7 +294,7 @@ func GetCrossRect(p0, p1 Coord, rWidth, rHeight, width, height int32) map[Coord]
 	return coordSet
 }
 
-// GetIntersectRect 求两个矩形相交区域
+// GetIntersectRect calculates the intersection area between two rectangles
 func GetIntersectRect(r0 Rectangle, r1 Rectangle) (Rectangle, bool) {
 	rect := Rectangle{}
 	rect.X = max(r0.X, r1.X)

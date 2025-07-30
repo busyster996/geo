@@ -2,12 +2,12 @@ package geo
 
 import "github.com/busyster996/geo/util"
 
-// Segment 线段
+// Segment represents a line segment defined by two endpoints
 type Segment struct {
-	A, B Coord
+	A, B Coord // Start and end points of the segment
 }
 
-// NewSegment 新建
+// NewSegment creates a new line segment
 func NewSegment(a, b Coord) Segment {
 	return Segment{
 		A: a,
@@ -15,36 +15,37 @@ func NewSegment(a, b Coord) Segment {
 	}
 }
 
-// ToVector 获取向量
+// ToVector converts segment to vector representation
 func (s *Segment) ToVector() Vector {
 	return NewVector(s.A, s.B)
 }
 
-// CalCoordDst 计算点到线段的距离
+// CalCoordDst calculates the distance from a point to the line segment
 func (s *Segment) CalCoordDst(coord Coord) float64 {
-	// 点到线段端点的距离
+	// Distance from point to segment endpoints
 	a := CalDstCoordToCoord(coord, s.A)
 	b := CalDstCoordToCoord(coord, s.B)
 	dst := min(a, b)
 
-	// 判断点与线段的垂线是否与线段相交
+	// Check if perpendicular from point intersects with segment
 	ab := NewVector(s.A, s.B)
 	ap := NewVector(s.A, coord)
 	if lab := ab.Length(); util.AC.Greater(ap.Dot(&ab)/lab, lab) {
 		return dst
 	}
 
-	// 点到直线的距离
+	// Distance from point to line
 	vec := s.ToVector()
 	c := vec.CalCoordDst(s.A, coord)
 
 	return min(dst, c)
 }
 
-// Pan 线段平移，左手坐标系，按照叉积为正的方向平行移动一定距离
+// Pan translates the segment parallel by given distance
+// Left-hand coordinate system, moves in direction of positive cross product
 func (s *Segment) Pan(dst int32, positive bool) Segment {
 	v := s.ToVector()
-	// 法向量，叉积为正的方向
+	// Normal vector in direction of positive cross product
 	normalV := NewVectorByCoord(Coord{X: -v.Z, Z: v.X})
 	if !positive {
 		normalV = NewVectorByCoord(Coord{X: v.Z, Z: -v.X})
@@ -55,12 +56,12 @@ func (s *Segment) Pan(dst int32, positive bool) Segment {
 	return NewSegment(newV.ToCoord(s.A), newV.ToCoord(s.B))
 }
 
-// CrossCircle 判断线段是否和圆相交，相交则返回第一个交点
+// CrossCircle checks if segment intersects with circle, returns first intersection point if exists
 func (s *Segment) CrossCircle(circle Circle) (Coord, bool) {
 	return GetLineCrossCircle(s.A, s.B, circle.Center, circle.Radius)
 }
 
-// IsRectCross 排斥判断
+// IsRectCross performs quick rejection test for line segment intersection
 func IsRectCross(p0, p1, q0, q1 Coord) bool {
 	ret := min(p0.X, p1.X) <= max(q0.X, q1.X) &&
 		min(q0.X, q1.X) <= max(p0.X, p1.X) &&
@@ -69,14 +70,14 @@ func IsRectCross(p0, p1, q0, q1 Coord) bool {
 	return ret
 }
 
-// IsLineSegmentCross 跨立判断
+// IsLineSegmentCross performs straddle test for line segment intersection
 func IsLineSegmentCross(p0, p1, q0, q1 Coord) bool {
 	// q0q1 X q0p0
 	b1 := cross(q1, p0, q0)
 	// q0q1 X q0p1
 	b2 := cross(q1, p1, q0)
 
-	// 叉积等于0，说明其中一点与另外的线段共线
+	// Cross product equals 0 means one point is collinear with the other segment
 	if b1 == 0 || b2 == 0 {
 		return true
 	}
@@ -93,19 +94,19 @@ func IsLineSegmentCross(p0, p1, q0, q1 Coord) bool {
 	return ((b1 < 0) != (b2 < 0)) && ((a1 < 0) != (a2 < 0))
 }
 
-// GetCrossCoord 求线段P1P2与Q1Q2的交点。
-// https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect/565282#
+// GetCrossCoord calculates intersection point between line segments P1P2 and Q1Q2
+// Reference: https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect/565282#
 func GetCrossCoord(p0, p1, q0, q1 Coord) (Coord, bool) {
 	v1 := NewVector(p0, p1)
 	v2 := NewVector(q0, q1)
-	// 共线
+	// Parallel lines
 	if v1.Cross(&v2) == 0 {
 		return Coord{}, false
 	}
 
 	if IsRectCross(p0, p1, q0, q1) {
 		if IsLineSegmentCross(p0, p1, q0, q1) {
-			// 求交点
+			// Calculate intersection point
 			s1X := float64(p1.X - p0.X)
 			s1Z := float64(p1.Z - p0.Z)
 			s2X := float64(q1.X - q0.X)

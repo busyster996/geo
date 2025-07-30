@@ -6,13 +6,13 @@ import (
 	"github.com/busyster996/geo/util"
 )
 
-// Circle 圆
+// Circle represents a 2D circle with center coordinate and radius
 type Circle struct {
-	Center Coord
-	Radius int32
+	Center Coord // Center coordinate of the circle
+	Radius int32 // Radius of the circle
 }
 
-// NewCirCle 新建
+// NewCirCle creates a new circle with given center and radius
 func NewCirCle(center Coord, radius int32) Circle {
 	return Circle{
 		Center: center,
@@ -20,13 +20,14 @@ func NewCirCle(center Coord, radius int32) Circle {
 	}
 }
 
-// GetLocationToBorder 获取和Border的相对位置
+// GetLocationToBorder returns the relative position between circle and border
 func (c *Circle) GetLocationToBorder(b *Border) LocationState {
 	minX, minZ, maxX, maxZ := c.ToRect()
 	return b.RectLocation(minX, minZ, maxX, maxZ)
 }
 
-// ToRect 泛化为矩形
+// ToRect converts circle to bounding rectangle
+// Returns the minimum and maximum X,Z coordinates of the bounding rectangle
 func (c *Circle) ToRect() (minX, minZ, maxX, maxZ int32) {
 	minX = c.Center.X - c.Radius
 	minZ = c.Center.Z - c.Radius
@@ -35,9 +36,11 @@ func (c *Circle) ToRect() (minX, minZ, maxX, maxZ int32) {
 	return
 }
 
-// GetIntersectCoord 求圆外一点到中心的线段和圆的交点
+// GetIntersectCoord calculates the intersection point between circle and line from external point to center
+// p: external point outside the circle
+// Returns the intersection point on the circle
 func (c *Circle) GetIntersectCoord(p Coord) Coord {
-	// 中心点和p重合时，直接返回中心点
+	// Return center directly if center and p coincide
 	if c.Center == p {
 		return c.Center
 	}
@@ -48,14 +51,14 @@ func (c *Circle) GetIntersectCoord(p Coord) Coord {
 	return vec.ToCoord(c.Center)
 }
 
-// IsIntersect 线段与圆是否相交
+// IsIntersect checks if line segment intersects with circle
 func (c *Circle) IsIntersect(s *Segment) bool {
 	_, ok := c.GetLineCross(s)
 	return ok
 }
 
-// GetLineCross 线段与圆的交点
-// 如果有交点，返回第一个交点，如果没有，返回nil
+// GetLineCross calculates intersection point between line segment and circle
+// Returns the first intersection point if exists, otherwise returns false
 func (c *Circle) GetLineCross(s *Segment) (Coord, bool) {
 	var coord1 *Coord
 	var coord2 *Coord
@@ -99,12 +102,13 @@ func (c *Circle) GetLineCross(s *Segment) (Coord, bool) {
 	return *coord1, true
 }
 
-// IsInterPolygon 判断圆和多边形是否相交，相交返回true，不相交返回false
-// 圆在多边形内部，相交；多边形在圆内部，相交；圆和多边形只有部分相交，相交。圆和多边形完全分离，不相交
-// 此处的相交判断可以类比于碰撞判断
-// circle: 圆
-// vectors: 多边形向量数组，逆时针
-// 参考链接：https://bitlush.com/blog/circle-vs-polygon-collision-detection-in-c-sharp
+// IsInterPolygon checks if circle intersects with polygon
+// Returns true if intersected, false if separated
+// Intersection cases: circle inside polygon, polygon inside circle, partial intersection
+// This intersection detection can be used for collision detection
+// circle: the circle to check
+// vectors: polygon vector array in counter-clockwise order
+// Reference: https://bitlush.com/blog/circle-vs-polygon-collision-detection-in-c-sharp
 func (c *Circle) IsInterPolygon(vectors []Vector) bool {
 	radiusSquared := float64(c.Radius * c.Radius)
 
@@ -163,6 +167,7 @@ func (c *Circle) IsInterPolygon(vectors []Vector) bool {
 	return nearestIsInside
 }
 
+// isInsideEdge checks if point is inside the edge for polygon intersection detection
 func isInsideEdge(edge, axis *Vector) bool {
 	switch {
 	case edge.X > 0 && axis.Z > 0:

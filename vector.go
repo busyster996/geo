@@ -2,14 +2,14 @@ package geo
 
 import "math"
 
-// Vector 位置向量
-// 从坐标原点指向点所在位置的矢量称为位置矢量，简称位矢。
-// https://zh.wikipedia.org/wiki/%E4%BD%8D%E7%BD%AE%E5%90%91%E9%87%8F
+// Vector represents a position vector
+// A vector from the coordinate origin to a point's position is called a position vector
+// Reference: https://zh.wikipedia.org/wiki/%E4%BD%8D%E7%BD%AE%E5%90%91%E9%87%8F
 type Vector struct {
-	X, Z int32
+	X, Z int32 // X and Z components of the vector
 }
 
-// NewVector 新建
+// NewVector creates a new vector from start to end coordinate
 func NewVector(start, end Coord) Vector {
 	return Vector{
 		X: end.X - start.X,
@@ -17,12 +17,12 @@ func NewVector(start, end Coord) Vector {
 	}
 }
 
-// NewVectorByCoord 新建
+// NewVectorByCoord creates a new vector from a coordinate (treated as position vector)
 func NewVectorByCoord(p Coord) Vector {
 	return Vector(p)
 }
 
-// Add 向量的加法
+// Add performs vector addition
 func (v *Vector) Add(vec *Vector) Vector {
 	return Vector{
 		X: v.X + vec.X,
@@ -30,7 +30,7 @@ func (v *Vector) Add(vec *Vector) Vector {
 	}
 }
 
-// Minus 向量的减法
+// Minus performs vector subtraction
 func (v *Vector) Minus(vec *Vector) Vector {
 	return Vector{
 		X: v.X - vec.X,
@@ -38,30 +38,32 @@ func (v *Vector) Minus(vec *Vector) Vector {
 	}
 }
 
-// Dot 向量的点积
+// Dot calculates the dot product of two vectors
 func (v *Vector) Dot(vec *Vector) float64 {
 	result := int64(v.X) * int64(vec.X)
 	result += int64(v.Z) * int64(vec.Z)
 	return float64(result)
 }
 
-// Cross 向量的叉乘
-// result > 0 vec在v左侧; reslut <0 vec在v右; result.Y = 0 共线
+// Cross calculates the cross product of two vectors (2D cross product returns scalar)
+// result > 0: vec is on the left side of v
+// result < 0: vec is on the right side of v
+// result = 0: vectors are collinear
 func (v *Vector) Cross(vec *Vector) int64 {
 	return int64(v.X)*int64(vec.Z) - int64(v.Z)*int64(vec.X)
 }
 
-// LengthSquared 距离平方
+// LengthSquared returns the squared length of the vector
 func (v *Vector) LengthSquared() float64 {
 	return float64(int64(v.X)*int64(v.X) + int64(v.Z)*int64(v.Z))
 }
 
-// Length 向量的长度
+// Length returns the length (magnitude) of the vector
 func (v *Vector) Length() float64 {
 	return math.Sqrt(v.LengthSquared())
 }
 
-// Trunc 向量截断
+// Trunc scales the vector by given ratio
 func (v *Vector) Trunc(ratio float64) Vector {
 	return Vector{
 		X: int32(ratio * float64(v.X)),
@@ -69,17 +71,17 @@ func (v *Vector) Trunc(ratio float64) Vector {
 	}
 }
 
-// TruncEdge 截断边为一个单位向量
+// TruncEdge truncates edge to a unit vector with length 1000
 func TruncEdge(start, end Coord) Coord {
-	// 生成拐点数组
+	// Generate inflection point array
 	vec0 := NewVector(start, end)
-	// 单位向量
+	// Unit vector with length 1000
 	vec0 = vec0.Trunc(1000 / vec0.Length())
 
 	return vec0.ToCoord(start)
 }
 
-// ToCoord 转换成坐标
+// ToCoord converts vector to coordinate by adding to start coordinate
 func (v Vector) ToCoord(start Coord) Coord {
 	return Coord{
 		X: start.X + v.X,
@@ -87,11 +89,12 @@ func (v Vector) ToCoord(start Coord) Coord {
 	}
 }
 
-// Rotate 向量按照角度旋转获得新的向量，左手坐标系，旋转的时候默认向左边旋转
-// 对于任意两个不同点A和B，A绕B旋转θ角度后的坐标为：
-// (Δx*cosθ- Δy * sinθ+ xB, Δy*cosθ + Δx * sinθ+ yB )
-// 注：xB、yB为B点坐标。
-// https://blog.csdn.net/u013445530/article/details/44904017
+// Rotate rotates the vector by given angle and returns new vector
+// Left-hand coordinate system, default rotation is to the left
+// For any two different points A and B, A rotated θ angle around B results in:
+// (Δx*cosθ - Δy*sinθ + xB, Δy*cosθ + Δx*sinθ + yB)
+// Note: xB, yB are coordinates of point B
+// Reference: https://blog.csdn.net/u013445530/article/details/44904017
 func (v *Vector) Rotate(angle float64) Vector {
 	x0 := float64(v.X)
 	z0 := float64(v.Z)
@@ -108,7 +111,7 @@ func (v *Vector) Rotate(angle float64) Vector {
 	}
 }
 
-// CalCoordDst 获取点到向量的距离
+// CalCoordDst calculates the distance from a point to the vector (line)
 func (v *Vector) CalCoordDst(start, target Coord) float64 {
 	vec := NewVector(start, target)
 
@@ -116,7 +119,7 @@ func (v *Vector) CalCoordDst(start, target Coord) float64 {
 	return vec.Length() * math.Sin(angle)
 }
 
-// GetAngle 获取俩个向量的角度
+// GetAngle calculates the angle between two vectors
 func (v *Vector) GetAngle(vec *Vector) float64 {
 	a := v.Dot(vec)
 	b := v.Length() * vec.Length()
@@ -132,15 +135,16 @@ func (v *Vector) GetAngle(vec *Vector) float64 {
 	return angle
 }
 
-// cross 叉乘算法,
-// 积=p3p1 X p3p2
+// cross calculates cross product for three points
+// Result = p3p1 X p3p2
 func cross(p1, p2, p3 Coord) int64 {
 	s := int64(p1.X-p3.X)*int64((p2.Z-p3.Z)) - int64(p2.X-p3.X)*int64(p1.Z-p3.Z)
 	return s
 }
 
-// CalCoordByRatio Ratio表示newVec和Vec长度的比值
-// 返回newVec终点坐标
+// CalCoordByRatio calculates coordinate by ratio
+// ratio represents the ratio between newVec and Vec lengths
+// Returns the endpoint coordinate of newVec
 func CalCoordByRatio(startCoord, endCoord Coord, ratio float64) Coord {
 	vec := NewVector(startCoord, endCoord)
 	return vec.Trunc(ratio).ToCoord(startCoord)

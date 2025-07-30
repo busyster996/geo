@@ -1,29 +1,29 @@
 package geo
 
-// LocationState 位置状态
+// LocationState represents the position state
 type LocationState int
 
-// LocationState
+// LocationState constants
 const (
 	LeftTop = 1 << iota
 	RightTop
-	LeftButtom
-	RightButtom
+	LeftBottom  // Fixed typo: Buttom -> Bottom
+	RightBottom // Fixed typo: Buttom -> Bottom
 )
 
-// Border 边界
+// Border represents a boundary
 type Border struct {
 	Rectangle
 }
 
-// NewBorder 创建新的边界
+// NewBorder creates a new border
 func NewBorder(x, z, width, height int32) Border {
 	return Border{
 		Rectangle: NewRectangle(x, z, width, height),
 	}
 }
 
-// RectLocation 判断边界位置
+// RectLocation determines the boundary position of a rectangle
 func (b *Border) RectLocation(minX, minZ, maxX, maxZ int32) LocationState {
 	if minX > b.X+b.Width ||
 		minZ > b.Z+b.Height ||
@@ -40,7 +40,7 @@ func (b *Border) RectLocation(minX, minZ, maxX, maxZ int32) LocationState {
 			location |= LeftTop
 		}
 		if minZ <= centerZ {
-			location |= LeftButtom
+			location |= LeftBottom
 		}
 	}
 	if maxX > centerZ {
@@ -48,15 +48,15 @@ func (b *Border) RectLocation(minX, minZ, maxX, maxZ int32) LocationState {
 			location |= RightTop
 		}
 		if minZ < centerZ {
-			location |= RightButtom
+			location |= RightBottom
 		}
 	}
 	return location
 }
 
-// CoordLocation 点在Border中的位置
+// CoordLocation returns the position of a coordinate point within the Border
 func (b *Border) CoordLocation(p Coord) LocationState {
-	// 边界外
+	// Outside boundary
 	if !b.IsCoordInside(p) {
 		return 0
 	}
@@ -67,10 +67,10 @@ func (b *Border) CoordLocation(p Coord) LocationState {
 		if p.Z >= centerZ {
 			return LeftTop
 		}
-		return LeftButtom
+		return LeftBottom
 	}
 	if p.Z >= centerZ {
 		return RightTop
 	}
-	return RightButtom
+	return RightBottom
 }

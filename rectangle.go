@@ -2,14 +2,14 @@ package geo
 
 import "math/rand"
 
-// Rectangle 矩形对象
+// Rectangle represents a rectangle defined by bottom-left corner and dimensions
 type Rectangle struct {
-	Coord  // 左下角点
-	Width  int32
-	Height int32
+	Coord        // Bottom-left corner coordinate
+	Width  int32 // Rectangle width
+	Height int32 // Rectangle height
 }
 
-// NewRectangle 创建矩形
+// NewRectangle creates a new rectangle with given position and dimensions
 func NewRectangle(x, z, width, height int32) Rectangle {
 	return Rectangle{
 		Coord: Coord{
@@ -21,7 +21,7 @@ func NewRectangle(x, z, width, height int32) Rectangle {
 	}
 }
 
-// RandCoord 随机一个坐标
+// RandCoord generates a random coordinate within the rectangle
 func (rec *Rectangle) RandCoord() Coord {
 	return Coord{
 		X: rec.X + rand.Int31n(rec.Width),
@@ -29,17 +29,17 @@ func (rec *Rectangle) RandCoord() Coord {
 	}
 }
 
-// GetVerticeCoords 获取4个顶点坐标,边界点按照逆时针排列
+// GetVerticeCoords returns the 4 vertex coordinates in counter-clockwise order
 func (rec *Rectangle) GetVerticeCoords() [4]Coord {
 	var p [4]Coord
-	p[0] = Coord{X: rec.Coord.X, Z: rec.Coord.Z}
-	p[1] = Coord{X: rec.Coord.X + rec.Width, Z: rec.Coord.Z}
-	p[2] = Coord{X: rec.Coord.X + rec.Width, Z: rec.Coord.Z + rec.Height}
-	p[3] = Coord{X: rec.Coord.X, Z: rec.Coord.Z + rec.Height}
+	p[0] = Coord{X: rec.Coord.X, Z: rec.Coord.Z}                          // Bottom-left
+	p[1] = Coord{X: rec.Coord.X + rec.Width, Z: rec.Coord.Z}              // Bottom-right
+	p[2] = Coord{X: rec.Coord.X + rec.Width, Z: rec.Coord.Z + rec.Height} // Top-right
+	p[3] = Coord{X: rec.Coord.X, Z: rec.Coord.Z + rec.Height}             // Top-left
 	return p
 }
 
-// GetVectors 获取4条线段，按照逆时针排列
+// GetVectors returns 4 edge vectors in counter-clockwise order
 func (rec *Rectangle) GetVectors() [4]Vector {
 	coords := rec.GetVerticeCoords()
 	return [4]Vector{
@@ -50,7 +50,7 @@ func (rec *Rectangle) GetVectors() [4]Vector {
 	}
 }
 
-// GetLocationToBorder 获得矩形和给定边界的位置关系
+// GetLocationToBorder returns the positional relationship between rectangle and given border
 func (rec *Rectangle) GetLocationToBorder(b *Border) LocationState {
 	minX := rec.X
 	maxX := rec.X + rec.Width
@@ -59,9 +59,10 @@ func (rec *Rectangle) GetLocationToBorder(b *Border) LocationState {
 	return b.RectLocation(minX, minZ, maxX, maxZ)
 }
 
-// IsCoordInside 点是否在矩形内
-// 矩形的向量是逆时针排列，所以当点p和矩形的向量之间求叉积，且全部大于0时，表示在同一侧，则点p在矩形内
-// 需要注意的是：共线的情况也认为在同一侧，所以需要加上=0的判断
+// IsCoordInside checks if point is inside the rectangle
+// Rectangle vectors are in counter-clockwise order, so when cross product
+// between point p and rectangle vectors are all >= 0, point p is inside rectangle
+// Note: collinear cases are also considered as inside, so we need to include =0
 func (rec *Rectangle) IsCoordInside(p Coord) bool {
 	pts := rec.GetVerticeCoords()
 

@@ -1,17 +1,18 @@
 package geo
 
-// Polygon 多边形接口
+// Polygon defines the interface for polygon operations
 type Polygon interface {
-	IsCoordInside(p Coord) bool
-	GetVectors() []Vector
-	ToRect() (minX, minZ, maxX, maxZ int32)
-	GetIndex() int32
-	GetEdgeIDs() []int32
-	GetEdgeMidCoords() []Coord
-	GetVertices() []Vertice
+	IsCoordInside(p Coord) bool             // Check if point is inside polygon
+	GetVectors() []Vector                   // Get vector representation of polygon
+	ToRect() (minX, minZ, maxX, maxZ int32) // Get bounding rectangle
+	GetIndex() int32                        // Get polygon index
+	GetEdgeIDs() []int32                    // Get edge identifiers
+	GetEdgeMidCoords() []Coord              // Get midpoints of edges
+	GetVertices() []Vertice                 // Get vertices of polygon
 }
 
-// CrossProduct 计算叉积
+// CrossProduct calculates the cross product of three vertices
+// Returns 1 for counter-clockwise, -1 for clockwise, 0 for collinear
 func CrossProduct(p1, p2, p3 Vertice) int32 {
 	ax := p2.Coord.X - p1.Coord.X
 	ay := p2.Coord.Z - p1.Coord.Z
@@ -27,7 +28,7 @@ func CrossProduct(p1, p2, p3 Vertice) int32 {
 	}
 }
 
-// IsConvex 查看是否为凸多边形
+// IsConvex checks if the given vertices form a convex polygon
 func IsConvex(vertices []Vertice) bool {
 	numPoints := len(vertices)
 	negativeFlag := false

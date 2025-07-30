@@ -1,31 +1,31 @@
 package geo
 
-// Vertice 顶点
+// Vertice represents a vertex with unique index and coordinate
 type Vertice struct {
-	Index int32 // 顶点序号，唯一标识
-	Coord Coord // 顶点坐标
+	Index int32 // Unique vertex identifier
+	Coord Coord // Vertex coordinate
 }
 
-// Edge 边
+// Edge represents an edge connecting two vertices
 type Edge struct {
-	WtCoord            Coord       // 重心点
-	Vertices           [2]Vertice  // 顶点数组，包含两个顶点0和1
-	AdjacenctTriangles []*Triangle //相邻的两个三角形
-	Inflects           [2]Vertice  // 拐点数组
-	IsAdjacency        bool        // 是否为邻接边
+	WtCoord            Coord       // Weight coordinate (center of mass)
+	Vertices           [2]Vertice  // Vertex array containing two vertices (0 and 1)
+	AdjacenctTriangles []*Triangle // Two adjacent triangles
+	Inflects           [2]Vertice  // Inflection point array
+	IsAdjacency        bool        // Whether this is an adjacent edge
 }
 
-// CalMidCoord 计算边的终点
+// CalMidCoord calculates the midpoint of the edge
 func (e *Edge) CalMidCoord() Coord {
 	return CalMidCoord(e.Vertices[0].Coord, e.Vertices[1].Coord)
 }
 
-// GenKey 生成边的序号
+// GenKey generates a unique key for the edge
 func (e *Edge) GenKey() int32 {
 	return GenEdgeKey(e.Vertices[0].Index, e.Vertices[1].Index)
 }
 
-// GenEdgeKey 生成边的序号
+// GenEdgeKey generates a unique key for an edge given two vertex indices
 func GenEdgeKey(i, j int32) int32 {
 	if i < j {
 		return 10000*i + j
